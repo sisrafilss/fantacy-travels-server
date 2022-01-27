@@ -57,6 +57,14 @@ async function run() {
       res.json(blog);
     });
 
+    // GET -
+    app.get("/all-blogs", async (req, res) => {
+      const query = { email: req.query.email };
+      const cursor = blogsCollection.find(query);
+      const blogs = await cursor.toArray();
+      res.json(blogs);
+    });
+
     // POST - Add a new Blog
     app.post("/blogs", async (req, res) => {
       const blogObj = req.body;
@@ -69,11 +77,11 @@ async function run() {
 
       // Extract other information and make our blog object including image for saveing into MongoDB
       const newBlog = {
+        email: blogObj.email,
         title: blogObj.title,
         thumbnail: imageBuffer,
         author: {
           name: blogObj.name,
-          email: blogObj.email,
           photoURL: blogObj.image,
           postedOn: blogObj.postedOn,
         },
@@ -87,6 +95,14 @@ async function run() {
         publish: "Pending",
       };
       const result = await blogsCollection.insertOne(newBlog);
+      res.json(result);
+    });
+
+    // Delete - Delete a blog by id
+    app.delete("/blogs/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const result = await blogsCollection.deleteOne(query);
       res.json(result);
     });
   } finally {
