@@ -34,6 +34,14 @@ async function run() {
     /* ========================== Blogs ========================== */
 
     // GET - Get all published blogs
+    app.get("/all-blog", async (req, res) => {
+      const cursor = blogsCollection.find({});
+      const blogs = await cursor.toArray();
+      res.json(blogs);
+    });
+
+
+    // GET - Get all published blogs
     app.get("/blogs", async (req, res) => {
       const query = { publish: "Published" };
       const cursor = blogsCollection.find(query);
@@ -45,7 +53,7 @@ async function run() {
     app.get("/top-blogs", async (req, res) => {
       const query = { publish: "Published" };
       const cursor = blogsCollection.find(query);
-      const topBlogs = await cursor.limit(2).toArray();
+      const topBlogs = await cursor.limit(10).toArray();
       res.json(topBlogs);
     });
 
@@ -104,6 +112,72 @@ async function run() {
       const query = { _id: ObjectId(id) };
       const result = await blogsCollection.deleteOne(query);
       res.json(result);
+    });
+
+    // PUT - Update Blogs publish status
+    app.put("/blogs/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const found = await blogsCollection.findOne(query);
+      found.publish = "Published";
+      const filter = query;
+      const options = { upsert: false };
+      const updateDoc = { $set: found };
+      const result = await blogsCollection.updateOne(
+        filter,
+        updateDoc,
+        options
+      );
+      res.json(result);
+    });
+
+    /* ================== USERs ========================= */
+
+    // POST - Add user data to Database
+    app.post("/users", async (req, res) => {
+      const newUser = req.body;
+      const result = await usersCollection.insertOne(newUser);
+      res.json(result);
+    });
+
+    // PUT - Update user data to database for third party login system
+    app.put("/users", async (req, res) => {
+      const userData = req.body;
+      const filter = { email: userData.email };
+      const options = { upsert: true };
+      const updateDoc = { $set: userData };
+      const result = await usersCollection.updateOne(
+        filter,
+        updateDoc,
+        options
+      );
+      res.json(result);
+    });
+
+    // PUT - Set an user role as admin
+    app.put("/make-admin", async (req, res) => {
+      const filter = req.body;
+      const updateDoc = {
+        $set: {
+          role: "admin",
+        },
+      };
+      const result = await usersCollection.updateOne(filter, updateDoc);
+      res.json(result);
+    });
+
+    // GET - Admin Status
+    app.get("/users/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { email: email };
+      const result = await usersCollection.findOne(query);
+      let isAdmin = false;
+      if (result?.role === "admin") {
+        isAdmin = true;
+        res.json({ admin: isAdmin });
+      } else {
+        res.json({ message: "You are not an Admin." });
+      }
     });
   } finally {
     // await client.close();
