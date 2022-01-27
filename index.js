@@ -33,17 +33,19 @@ async function run() {
 
     /* ========================== Blogs ========================== */
 
-    // GET - Get all blogs
+    // GET - Get all published blogs
     app.get("/blogs", async (req, res) => {
-      const cursor = blogsCollection.find({});
+      const query = { publish: "Published" };
+      const cursor = blogsCollection.find(query);
       const blogs = await cursor.toArray();
       res.json(blogs);
     });
 
-    // GET - Get Top 10 Blogs
+    // GET - Get Top 10 published Blogs
     app.get("/top-blogs", async (req, res) => {
-      const cursor = blogsCollection.find({});
-      const topBlogs = await cursor.limit(10).toArray();
+      const query = { publish: "Published" };
+      const cursor = blogsCollection.find(query);
+      const topBlogs = await cursor.limit(2).toArray();
       res.json(topBlogs);
     });
 
@@ -51,19 +53,16 @@ async function run() {
     app.get("/blogs/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: ObjectId(id) };
-      const banner = await blogsCollection.findOne(query);
-      res.json(banner);
+      const blog = await blogsCollection.findOne(query);
+      res.json(blog);
     });
 
     // POST - Add a new Blog
     app.post("/blogs", async (req, res) => {
-      console.log(req.body);
-
       const blogObj = req.body;
 
       // Extract image data and convert it to binary base 64
       const pic = req.files.thumbnail;
-      // console.log(pic);
       const picData = pic.data;
       const encodedPic = picData.toString("base64");
       const imageBuffer = Buffer.from(encodedPic, "base64");
@@ -85,6 +84,7 @@ async function run() {
           expence: blogObj.expense,
           rating: blogObj.rating,
         },
+        publish: "Pending",
       };
       const result = await blogsCollection.insertOne(newBlog);
       res.json(result);
