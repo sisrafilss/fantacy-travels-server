@@ -40,7 +40,6 @@ async function run() {
       res.json(blogs);
     });
 
-
     // GET - Get all published blogs
     app.get("/blogs", async (req, res) => {
       const query = { publish: "Published" };
@@ -73,6 +72,29 @@ async function run() {
       res.json(blogs);
     });
 
+    // Get Blog Statistics
+    app.get("/blog-statistics", async (req, res) => {
+      const query = { publish: "Published" };
+      const cursor = blogsCollection.find(query);
+      const blogs = await cursor.toArray();
+
+      const fiveStars = blogs.filter((blog) => blog.travelInfo.rating === "5");
+      const fourStars = blogs.filter((blog) => blog.travelInfo.rating === "4");
+      const threeStars = blogs.filter((blog) => blog.travelInfo.rating === "3");
+      const twoStars = blogs.filter((blog) => blog.travelInfo.rating === "2");
+      const oneStars = blogs.filter((blog) => blog.travelInfo.rating === "1");
+
+      const statistics = [
+        fiveStars.length,
+        fourStars.length,
+        threeStars.length,
+        twoStars.length,
+        oneStars.length,
+      ];
+
+      res.json(statistics);
+    });
+
     // POST - Add a new Blog
     app.post("/blogs", async (req, res) => {
       const blogObj = req.body;
@@ -100,8 +122,17 @@ async function run() {
           expence: blogObj.expense,
           rating: blogObj.rating,
         },
-        publish: "Pending",
       };
+
+      // Getting current user role and set publishe status accrodingly
+      const admin = blogObj.admin;
+
+      if (admin === "true") {
+        newBlog.publish = "Published";
+      } else {
+        newBlog.publish = "Pending";
+      }
+
       const result = await blogsCollection.insertOne(newBlog);
       res.json(result);
     });
